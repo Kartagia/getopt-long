@@ -4,7 +4,7 @@
   "description": "The PERL Getopt::Long library equivalent for Node for handling command line options.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --harmony --recurse"
+    "test": "mocha --harmony --recursive"
   },
   "keywords": [
     "cli",
