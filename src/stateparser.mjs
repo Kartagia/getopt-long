@@ -178,6 +178,7 @@ export class ArrayParseResult {
         const {startIndex=0, endIndex = undefined, errorIndex = undefined, createNewResult=false, 
             /** @type {ELEMENT[]} */ result=[]} = param;
         const {currentIndex=startIndex, isEnd = false, isError = false} = param;
+        const {isComplete = false} = param;
 
         /**
          * The start index of the parse result.
