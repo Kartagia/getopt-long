@@ -125,9 +125,12 @@ function defaultStateParser(state, defaultStateOnSuccess = undefined, defaultSta
         const [nextState, newResult] = state.parse(parsed, parseResult);
         if (nextState.isError) {
             if (state.isComplete) {
+                // Completed state ignores the error state and derives the result state from the previous state on error.
                 if ("currentIndex" in parseResult && "setEnd" in parseResult) {
+                    // The result is iterable state, thus we update the satate.
                     return [stateOnSuccess ?? defaultStateOnSuccess ?? nextState, parseResult.setEnd(parseResult.currentIndex)];
                 } else {
+                    // 
                     return [stateOnSuccess ?? defaultStateOnSuccess ?? nextState, parseResult];
                 }
             } else {
@@ -163,7 +166,7 @@ function defaultStateParser(state, defaultStateOnSuccess = undefined, defaultSta
  * It can be created either as on in place parser altering
  * the internal result, or as a creating new independent array.
  * @template [ELEMENT=any] The element type.
- * @extends {IterableParseResult<ELEMENT, ELEMENT[]>}
+ * @implements {IterableParseResult<ELEMENT, ELEMENT[]>}
  */
 export class ArrayParseResult {
 
@@ -177,15 +180,50 @@ export class ArrayParseResult {
         const {currentIndex=startIndex, isEnd = false, isError = false} = param;
 
         /**
-         * @inheritdoc
+         * The start index of the parse result.
+         * @type {number}
          */
         this.startIndex = startIndex;
+        /**
+         * The end index of the parse result.
+         * @type {number|undefined}
+         */
         this.endIndex = endIndex;
         this.createNewResult = createNewResult;
+        /**
+         * The current index of the parse result.
+         * @type {number}
+         */
         this.currentIndex = currentIndex;
+        /**
+         * The error index of the parse result.
+         * @type {number|undefined}
+         */
         this.errorIndex = errorIndex;
+        /**
+         * The current result the parse result.
+         * @type {ELEMENT[]}
+         */
         this.result = result;
+
+        /**
+         * Is the current result at the end of parse its parse.
+         * @type {boolean}
+         */
         this.isEnd = isEnd;
+
+        /**
+         * Is the current result complete result. A complete
+         * result indicates the curren state may encounter a parse error
+         * resulting in a complete parse.
+         */
+        this.isComplete = isComplete;
+
+        /**
+         * Is the current result an erroneous result.
+         * @type {boolean}
+         * 
+         */
         this.isError = isError;
     }
 
@@ -318,9 +356,32 @@ export class CodePointParseState {
     }
 }
 
+
 /**
- * @template [RESULT=string] The result of the parse.
+ * The class performing a state parser.
+ * @template ELEMENT element The parsed valeus.
+ * @template RESULT teh result of the parse.
  */
-export class ParseState {
+export default class StateParser {
+
+    /**
+     * 
+     * @param {ParseState<ELEMENT, RESULT>} initialState The initial state of the parse.
+     */
+    constructor(initialState) {
+        
+    }
+
+    /**
+     * Parse the given source.
+    * @param {Iterator<ELEMENT>} source
+     */
+    parseAll(source) {
+        try {
+        let next = source.next();
+        } catch(error) {
+            new StateParser.ErrorState(error);
+        }
+    }
 
 }
