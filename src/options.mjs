@@ -45,9 +45,19 @@
  * true, the first alias is considered the switch name, and switch name is considered as one of the aliases. 
  * - Instead of replacing the old alias with new one, the former switch name is moved to the aliases. 
  * @property {boolean} [requireValue=false] Does the option have a required value.
- * @property {boolean} [multivalued=false] Does the option allow multiple values. 
+ * @property {boolean} [multiValued=false] Does the option allow multiple values. 
  */
 
+/**
+ * The default options of the OptionsOptions.
+ * @typedef {Pick<OptionsOptions, "requiredValue"|"multiValued"|"switchNameIsAlias">}
+ */
+export const DefaultOptionOptions = {
+    switchNameIsAlias: false,
+    requireValue: false,
+    multiValued: false
+}
+Object.freeze(DefaultOptionOptions);
 
 
 
@@ -155,7 +165,7 @@ export class OptionBuilder {
      */
     constructor(optionName, options = {}) {
         this.#optionName = optionName;
-        this.#options = options;
+        this.#options = {...DefaultOptionOptions, ...options};
         this.#switches = [];
     }
 
@@ -294,12 +304,17 @@ export class OptionBuilder {
     }
 
     /**
-     * The switch name 
+     * The primary switch name.
+     * @type {string|undefined} 
      */
     get switchName() {
         return this.#switches[0];
     }
 
+    /**
+     * The alternate alias switch names.
+     * @type {Readonly<string[]>}
+     */
     get aliases() {
         return this.#switches.slice(1);
     }
@@ -335,9 +350,9 @@ export class OptionBuilder {
     build() {
         if (this.#switches[0]) {
             return new CommandLineOption(this.#optionName, {
-                switchName: this.#switches[0],
-                aliases: [...(this.#switches.slice(1))],
-                ...(this.#options)
+                ...(this.options),
+                switchName: this.switchName,
+                aliases: [...(this.aliases)],
             });
         } else {
             throw new SyntaxError("Could not build an option without switch name");
