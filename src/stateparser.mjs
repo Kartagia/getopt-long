@@ -190,10 +190,14 @@ function defaultStateParser(state, defaultStateOnSuccess = undefined, defaultSta
  */
 
 /**
- * A generic abstract iterable parse result.
+ * @template ELEMENT The element of the iteration.
+ * @template [RESULT=Iterable<ELEMENT>] The parse result type.
+ * 
+ * A basic implementation of the IterableParseResultIndekxing.
  * 
  * The class does only implement the indexing altering operations, but
- * appending to the result is not handle.d 
+ * appending to the result is not handled.
+ * @implements {IterableParseResultIndexing<ELEMENT,RESULT>}
  */
 export class IterableIndexingParseResult {
 
@@ -302,6 +306,28 @@ export class IterableIndexingParseResult {
 
 }
 
+
+/**
+ * Check that a value is either boolean or undefined.
+ * @param {*} value The tested value.
+ * @returns {boolean|undefined} The valid result.
+ * @throws {SyntaxError} The value is not an undefined value or a boolean value.
+ */
+export function checkBooleanOrUndefined(value) {
+    if (value === undefined) {
+        return undefined;
+    } else {
+        return value == true;
+    }
+}
+
+/**
+ * The construction parameters of an array parse result.
+ * @template [ELEMENT=any] The element type.
+ * @template [RESULT=ELEMENT[]] The resiöt type.
+ * @typedef {IterableParseResult<ELEMENT, RESULT>} ArrayParseResultParams
+ */
+
 /**
  * An array parse result stores the result as an array.
  * 
@@ -334,22 +360,51 @@ export class ArrayParseResult extends IterableIndexingParseResult {
          * Is the current result at the end of parse its parse.
          * @type {boolean}
          */
-        this.isEnd = isEnd;
+        this.#isEnd = isEnd;
 
         /**
          * Is the current result complete result. A complete
          * result indicates the curren state may encounter a parse error
          * resulting in a complete parse.
          */
-        this.isComplete = isComplete;
+        this.#isComplete = isComplete;
 
         /**
          * Is the current result an erroneous result.
          * @type {boolean}
          * 
          */
-        this.isError = isError;
+        this.#isError = isError;
     }
+
+    #isComplete = undefined;
+
+    get isComplete() {
+        return this.#isComplete ?? super.isComplete;
+    }
+
+    set isComplete(newValue) {
+        this.#isComplete = checkBooleanOrUndefined(newValue);
+    }
+
+    #isError = undefined;
+
+    get isError() {
+        return this.#isError ?? super.isError;
+    }
+    set isError(newValue) {
+        this.#isError = checkBooleanOrUndefined(newValue);
+    }
+
+    #isEnd = undefined;
+
+    get isEnd() {
+        return this.#isEnd ?? super.isEnd;
+    }
+    set isEnd(newValue) {
+        this.#isEnd = checkBooleanOrUndefined(newValue);
+    }
+
 
 
     appendElement(element) {
