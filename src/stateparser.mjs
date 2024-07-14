@@ -66,18 +66,40 @@
 
 
 /**
+ * A simple state transition does not contain indexing.
+ * @template ELEMENT The element type.
+ * @template {RESULT extends Iterable<ELEMENT>} [RESULT=[]] The result impelemnting iterable result.
+ * @typedef {[nextState: ParseState<ELEMENT, RESULT>, newParseResult: ParseResult<RESULT>]} SimpleStateTransition
+ */
+
+/**
+ * An iterable state transition contains indexing information.
+ * @template ELEMENT The element type.
+ * @template {RESULT extends Iterable<ELEMENT>} [RESULT=[]] The result impelemnting iterable result.
+ * @typedef {[nextState: ParseState<ELEMENT, RESULT>, newParseResult: IterableParseResult<ELEMENT, RESULT>]} IterableStateTransition
+ */
+
+/**
+ * The parse result of the state parse.
+ * @template ELEMENT The element type.
+ * @template {RESULT extends Iterable<ELEMENT>} [RESULT=[]] The result impelemnting iterable result.
+ * @typedef {SimpleStateTransition<ELEMENT,RESULT>|IterableStateTransition<ELEMENT,RESULT>} StateTransition
+ */
+
+/**
  * A function performing parsing.
  * @template ELEMENT The element type.
- * @template {RESULT extends Iterable<ELEMENT>} RESULT The result impelemnting iterable result.
- * @callback StateParser
+ * @template [RESULT=Iterable<ELEMENT>] The result impelemnting iterable result.
+ * @callback IterableStateParser
  * @param {ELEMENT} parsed The parsed value.
  * @param {IterableParseResult<ELEMENT, RESULT>} parseResult The current parse result.
  * @param {ParseState<RESULT>|IterableParseState<ELEMENT, RESULT>} [stateOnSuccess] The state on successful completed parse.
  * Defaults to the default successful parse state of the current state.
  * @param {ParseState<RESULT>|IterableParseState<ELEMENT, RESULT>} [stateOnFailure] The state on failed parse.
  * Defaults to the default failed parse state of the current state.
- * @returns {[nextState: ParseState<RESULT>|IterableParseState<ELEMENT,RESULT>, newParseResult: (IterableParseResult<ELEMENT, RESULT>)]} The result of the parse.
+ * @returns {StateTransition<ELEMENT, RESULT>} The result of the parse.
 */
+
 
 /**
  * A function performing parsing.
@@ -85,12 +107,12 @@
  * @template [RESULT=ELEMENT[]] The resulting value.
  * @callback IterableStateParser
  * @param {ELEMENT} parsed The parsed value.
- * @param {ParseResult<RESULT>|IterableParseResult<ELEMENT, RESULT>} parseResult The current parse result.
+ * @param {IterableParseResult<ELEMENT, RESULT>} parseResult The current parse result.
  * @param {ParseState<RESULT>|IterableParseState<ELEMENT, RESULT>} [stateOnSuccess] The state on successful completed parse.
  * Defaults to the default successful parse state of the current state.
  * @param {ParseState<RESULT>|IterableParseState<ELEMENT, RESULT>} [stateOnFailure] The state on failed parse.
  * Defaults to the default failed parse state of the current state.
- * @returns {[nextState: ParseState<RESULT>, newParseResult: (ParseResult<RESULT>|IterableParseResult<ELEMENT, RESULT>)]} The result of the parse.
+ * @returns {StateTransition<ELEMENT, RESULT>} The result of the parse.
 */
 
 
@@ -360,7 +382,7 @@ export class ArrayParseResult extends IterableIndexingParseResult {
 
 /**
  * Parse state handling code points. 
- * @extends {IterableParseState<number, number[]>}
+ * @implements {IterableParseState<number, number[]>}
  */
 export class CodePointParseState {
 
