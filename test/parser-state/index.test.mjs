@@ -11,7 +11,18 @@ describe("function createDefaultStateParser", function() {
 
 });
 
-describe("class ArrayParseState", function() {
+
+describe("class ArrayParseResult", function() {
+
+    const defaultConstructionParams = [
+        ["With undefined props", undefined],
+        ["With empty props", {}],
+        ["With start index 5", {startIndex: 5}],
+        ["With error index 5",{endIndex: 5}],
+        ["With end index 5",{errorIndex: 5}], 
+        ["With start index 3, error index 5, and current idnex 8",{startIndex: 3, errorIndex: 5, currentIndex: 8}]
+    ];
+
     describe("Constructor", function() {
         [
             {
@@ -131,5 +142,25 @@ describe("class ArrayParseState", function() {
             });
         });
     })
+
+    describe("setCurrent", function () {
+        defaultConstructionParams.map( ([name, params]) => ({
+            name,
+            target: new ArrayParseResult(params),
+            params: 5,
+            test(value) {
+                expect(value.currentIndex).equal(5);
+            }
+        })).forEach( (testCase) => {
+            let result;
+            if (testCase.exception){
+                expect( () => {result = testCase.target.setCurrent(testCase.params)}).to.throw(testCase.exception);
+            } else {
+                expect( () => {result = testCase.target.setCurrent(testCase.params)}).to.not.throw();
+                testCase.test(result);
+            }
+        });
+    });
+
 });
 
