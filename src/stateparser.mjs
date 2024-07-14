@@ -6,11 +6,18 @@
 
 /**
  * A parse result indicates the reuslt of a parse.
+ * 
+ * The difference between isEnd and isCompleted is the fact whether the result may be altered.
+ * If the parse is at end, the parse should not continue. If the parse is complete, it may continue
+ * until it reaches an error or end of the parsed value.
+ * 
  * @template [RESULT=string] The result of the parse.
  * @typedef {Object} ParseResult
  * @property {RESULT} [result] The current parse result.
  * @property {boolean} [isError=false] The parse result is an error.
- * @property {boolean} [isEnd=false] The parse result is a valid end of parse.
+ * @property {boolean} [isEnd=false] The parse result is a finished parse parsing value between inclusive start index
+ * and exclusive end index.
+ * @property {boolean} [isCompleted=false] The parse result is a valid end of parse on error and end of parse.
  * @property {(addition: RESULT) => ParseResult<RESULT>} [appendResult] Create new parse result by 
  * appending the given addition to the current result. Optional operation.
  * @property {(newResult: RESULT) => ParseResult<RESULT>} setResult Create new parse result by 
@@ -161,24 +168,20 @@ function defaultStateParser(state, defaultStateOnSuccess = undefined, defaultSta
  */
 
 /**
- * An array parse result stores the result as an array.
+ * A generic abstract iterable parse result.
  * 
- * It can be created either as on in place parser altering
- * the internal result, or as a creating new independent array.
- * @template [ELEMENT=any] The element type.
- * @implements {IterableParseResult<ELEMENT, ELEMENT[]>}
+ * The class does only implement the indexing altering operations, but
+ * appending to the result is not handle.d 
  */
-export class ArrayParseResult {
+export class IterableIndexingParseResult {
 
     /**
-     * Create a new array parse result.
-     * @param {ArrayParseResultParams<ELEMENT, ELEMENT[]>} [param] The construction parameters. 
+     * Create a new iberable parse 
+     * @param {IterableParseResultIndexing<ELEMENT, RESULT>} [params] The initial state.
      */
-    constructor(param = {}) {
-        const {startIndex=0, endIndex = undefined, errorIndex = undefined, createNewResult=false, 
-            /** @type {ELEMENT[]} */ result=[]} = param;
-        const {currentIndex=startIndex, isEnd = false, isError = false} = param;
-        const {isComplete = false} = param;
+    constructor(params = {}) {
+        const { startIndex = 0, endIndex = undefined, errorIndex = undefined } = param;
+        const { currentIndex = startIndex } = param;
 
         /**
          * The start index of the parse result.
@@ -190,7 +193,6 @@ export class ArrayParseResult {
          * @type {number|undefined}
          */
         this.endIndex = endIndex;
-        this.createNewResult = createNewResult;
         /**
          * The current index of the parse result.
          * @type {number}
@@ -201,6 +203,105 @@ export class ArrayParseResult {
          * @type {number|undefined}
          */
         this.errorIndex = errorIndex;
+
+    }
+
+
+    /**
+     *  Set the end index.
+     * @param {number} currentIndex The new current index.
+     * @returns {ArrayParseResult<ELEMENT, ELEMENT[]>} A array parse result
+     * with current index set to the given value.
+    */
+    setCurrent(currentIndex) {
+        if (this.createNewResult) {
+            return new ArrayParseResult({ ...this, currentIndex });
+        } else {
+            this.currentIndex = currentIndex;
+            return this;
+        }
+    }
+
+    /**
+     * Set the end index.
+     * @param {number|undefined} endIndex The new end index.
+     * @returns {ArrayParseResult<ELEMENT, ELEMENT[]>} A array parse result
+     * with end index set to the given value.
+     */
+    setEnd(endIndex) {
+        if (this.createNewResult) {
+            return new ArrayParseResult({ ...this, endIndex });
+        } else {
+            this.endIndex = endIndex;
+            return this;
+        }
+    }
+
+    /**
+     * Set the error index.
+     * @param {number|undefined} errorIndex The new error index.
+     * @returns {ArrayParseResult<ELEMENT, ELEMENT[]>} A array parse result
+     * with error index set to the given value.
+     */
+    setError(errorIndex) {
+        if (this.createNewResult) {
+            return new ArrayParseResult({ ...this, errorIndex: errorIndex });
+        } else {
+            this.errorIndex = errorIndex;
+            return this;
+        }
+    }
+
+    /**
+     * Set the start index.
+     * @param {number} startIndex The new current index.
+     * @param {number} [currentIndex] The new current index. Defaults to the
+     * maximum of the new start index and the current current index.
+     * @returns {ArrayParseResult<ELEMENT, ELEMENT[]>} A array parse result
+     * with start and current index. index set to the given value.
+     */
+    setStart(startIndex, currentIndex = undefined) {
+        if (this.createNewResult) {
+            return new ArrayParseResult({ ...this, startIndex, currentIndex: currentIndex ?? (Math.max(this.currentIndex, startIndex)) });
+        } else {
+            this.startIndex = startIndex;
+            this.currentIndex = currentIndex ?? (Math.max(this.currentIndex, startIndex));
+            return this;
+        }
+    }
+
+    get isEnd() {
+        return this.endIndex !== undefined;
+    }
+
+    get isError() {
+        return this.errorIndex !== undefined;
+    }
+
+}
+
+/**
+ * An array parse result stores the result as an array.
+ * 
+ * It can be created either as on in place parser altering
+ * the internal result, or as a creating new independent array.
+ * @template [ELEMENT=any] The element type.
+ * @implements {IterableParseResult<ELEMENT, ELEMENT[]>}
+ */
+export class ArrayParseResult extends IterableIndexingParseResult {
+
+    /**
+     * Create a new array parse result.
+     * @param {ArrayParseResultParams<ELEMENT, ELEMENT[]>} [param] The construction parameters. 
+     */
+    constructor(param = {}) {
+        super(param);
+        const { createNewResult = false,
+            /** @type {ELEMENT[]} */ result = [] } = param;
+        const { isEnd = false, isError = false } = param;
+        const { isComplete = false } = param;
+
+        this.createNewResult = createNewResult;
         /**
          * The current result the parse result.
          * @type {ELEMENT[]}
@@ -228,10 +329,10 @@ export class ArrayParseResult {
         this.isError = isError;
     }
 
- 
-    appendElement(element)  {
+
+    appendElement(element) {
         if (this.createNewResult) {
-            return new ArrayParseResult({...this, result: [...this.result, element]});
+            return new ArrayParseResult({ ...this, result: [...this.result, element] });
         } else {
             this.result.push(element);
             return this;
@@ -240,7 +341,7 @@ export class ArrayParseResult {
 
     appendResult(result) {
         if (this.createNewResult) {
-            return new ArrayParseResult({...this, result: [...this.result, ...result]});
+            return new ArrayParseResult({ ...this, result: [...this.result, ...result] });
         } else {
             this.result.push(...result);
             return this;
@@ -249,79 +350,12 @@ export class ArrayParseResult {
 
     setResult(result) {
         if (this.createNewResult) {
-            return new ArrayParseResult({...this, result: result});
+            return new ArrayParseResult({ ...this, result: result });
         } else {
             this.result = result;
             return this;
         }
     }
-
-    /**
-     * Set the end index.
-     * @param {number} currentIndex The new current index.
-     * @returns {ArrayParseResult<ELEMENT, ELEMENT[]>} A array parse result
-     * with current index set to the given value.
-     */
-    setCurrent(currentIndex) {
-        if (this.createNewResult) {
-            return new ArrayParseResult({...this, currentIndex});
-        } else {
-            this.currentIndex = currentIndex;
-            return this;
-        }
-    }
-
-    /**
-     * Set the end index.
-     * @param {number|undefined} endIndex The new end index.
-     * @returns {ArrayParseResult<ELEMENT, ELEMENT[]>} A array parse result
-     * with end index set to the given value.
-     */
-    setEnd(endIndex) {
-        if (this.createNewResult) {
-            return new ArrayParseResult({...this, endIndex});
-        } else {
-            this.endIndex = endIndex;
-            return this;
-        }
-    }
-
-    /**
-     * Set the error index.
-     * @param {number|undefined} errorIndex The new error index.
-     * @returns {ArrayParseResult<ELEMENT, ELEMENT[]>} A array parse result
-     * with error index set to the given value.
-     */
-    setError(errorIndex) {
-        if (this.createNewResult) {
-            return new ArrayParseResult({...this, errorIndex: errorIndex});
-        } else {
-            this.errorIndex = errorIndex;
-            return this;
-        }
-    }
-
-
-
-    /**
-     * Set the start index.
-     * @param {number} startIndex The new current index.
-     * @param {number} [currentIndex] The new current index. Defaults to the
-     * maximum of the new start index and the current current index.
-     * @returns {ArrayParseResult<ELEMENT, ELEMENT[]>} A array parse result
-     * with start and current index. index set to the given value.
-     */
-    setStart(startIndex, currentIndex=undefined) {
-        if (this.createNewResult) {
-            return new ArrayParseResult({...this, startIndex, currentIndex: currentIndex ?? (Math.max(this.currentIndex, startIndex))});
-        } else {
-            this.startIndex = startIndex;
-            this.currentIndex = currentIndex ?? (Math.max(this.currentIndex, startIndex));
-            return this;
-        }
-    }
-
-
 }
 
 /**
@@ -348,7 +382,7 @@ export class CodePointParseState {
      * @returns {string} The string representation of the parse result. An undefined value
      * otherwise.
      */
-    toString(parseResult=undefined) {
+    toString(parseResult = undefined) {
         if (parseResult && this.isEnd) {
             return String.fromCodePoint(parseResult.result)
         } else {
@@ -370,7 +404,7 @@ export default class StateParser {
      * @param {ParseState<ELEMENT, RESULT>} initialState The initial state of the parse.
      */
     constructor(initialState) {
-        
+
     }
 
     /**
@@ -379,8 +413,8 @@ export default class StateParser {
      */
     parseAll(source) {
         try {
-        let next = source.next();
-        } catch(error) {
+            let next = source.next();
+        } catch (error) {
             new StateParser.ErrorState(error);
         }
     }
