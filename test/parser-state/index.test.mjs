@@ -7,33 +7,33 @@
 import { expect } from "chai";
 import { ArrayParseResult } from "../../src/stateparser.mjs";
 
-describe("function createDefaultStateParser", function() {
+describe("function createDefaultStateParser", function () {
 
 });
 
 
-describe("class ArrayParseResult", function() {
+describe("class ArrayParseResult", function () {
 
     const defaultConstructionParams = [
         ["With undefined props", undefined],
         ["With empty props", {}],
-        ["With start index 5", {startIndex: 5}],
-        ["With error index 5",{endIndex: 5}],
-        ["With end index 5",{errorIndex: 5}], 
-        ["With start index 3, error index 5, and current idnex 8",{startIndex: 3, errorIndex: 5, currentIndex: 8}]
+        ["With start index 5", { startIndex: 5 }],
+        ["With error index 5", { endIndex: 5 }],
+        ["With end index 5", { errorIndex: 5 }],
+        ["With start index 3, error index 5, and current idnex 8", { startIndex: 3, errorIndex: 5, currentIndex: 8 }]
     ];
 
-    describe("Constructor", function() {
+    describe("Constructor", function () {
         [
             {
                 name: "Default constructor with undefined props",
                 params: undefined,
                 test: (value) => {
                     expect(value).instanceof(ArrayParseResult);
-                    [ ["startIndex"], 0, ["currentIndex", 0], 
-                ["createNewResult", false], ["isEnd", false], 
-            ["isError", false] ].forEach(
-                        ([prop, expectedValue=undefined]) => {
+                    [["startIndex"], 0, ["currentIndex", 0],
+                    ["createNewResult", false], ["isEnd", false],
+                    ["isError", false]].forEach(
+                        ([prop, expectedValue = undefined]) => {
                             expect(value).have(prop);
                             if (expectedValue !== undefined) {
                                 expect(value).property(prop, expectedValue);
@@ -47,10 +47,10 @@ describe("class ArrayParseResult", function() {
                 params: {},
                 test: (value) => {
                     expect(value).instanceof(ArrayParseResult);
-                    [ ["startIndex"], 0, ["currentIndex", 0], 
-                ["createNewResult", false], ["isEnd", false], 
-            ["isError", false] ].forEach(
-                        ([prop, expectedValue=undefined]) => {
+                    [["startIndex"], 0, ["currentIndex", 0],
+                    ["createNewResult", false], ["isEnd", false],
+                    ["isError", false]].forEach(
+                        ([prop, expectedValue = undefined]) => {
                             expect(value).have(prop);
                             if (expectedValue !== undefined) {
                                 expect(value).property(prop, expectedValue);
@@ -61,13 +61,13 @@ describe("class ArrayParseResult", function() {
             },
             {
                 name: "Constructor with start index 5",
-                params: {startIndex: 5},
+                params: { startIndex: 5 },
                 test: (value) => {
                     expect(value).instanceof(ArrayParseResult);
-                    [ ["startIndex"], 5, ["currentIndex", 5], 
-                ["createNewResult", false], ["isEnd", false], 
-            ["isError", false] ].forEach(
-                        ([prop, expectedValue=undefined]) => {
+                    [["startIndex"], 5, ["currentIndex", 5],
+                    ["createNewResult", false], ["isEnd", false],
+                    ["isError", false]].forEach(
+                        ([prop, expectedValue = undefined]) => {
                             expect(value).have(prop);
                             if (expectedValue !== undefined) {
                                 expect(value).property(prop, expectedValue);
@@ -78,14 +78,14 @@ describe("class ArrayParseResult", function() {
             },
             {
                 name: "Constructor with error index 5",
-                params: {errorIndex: 5},
+                params: { errorIndex: 5 },
                 test: (value) => {
                     expect(value).instanceof(ArrayParseResult);
-                    [ ["startIndex"], 0, ["currentIndex", 0], 
+                    [["startIndex"], 0, ["currentIndex", 0],
                     ["errorIndex", 5],
-                ["createNewResult", false], ["isEnd", false], 
-            ["isError", true] ].forEach(
-                        ([prop, expectedValue=undefined]) => {
+                    ["createNewResult", false], ["isEnd", false],
+                    ["isError", true]].forEach(
+                        ([prop, expectedValue = undefined]) => {
                             expect(value).have(prop);
                             if (expectedValue !== undefined) {
                                 expect(value).property(prop, expectedValue);
@@ -96,14 +96,14 @@ describe("class ArrayParseResult", function() {
             },
             {
                 name: "Constructor with end index 5",
-                params: {endIndex: 5},
+                params: { endIndex: 5 },
                 test: (value) => {
                     expect(value).instanceof(ArrayParseResult);
-                    [ ["startIndex"], 0, ["currentIndex", 0], 
+                    [["startIndex"], 0, ["currentIndex", 0],
                     ["endIndex", 5],
-                ["createNewResult", false], ["isEnd", true], 
-            ["isError", false] ].forEach(
-                        ([prop, expectedValue=undefined]) => {
+                    ["createNewResult", false], ["isEnd", true],
+                    ["isError", false]].forEach(
+                        ([prop, expectedValue = undefined]) => {
                             expect(value).have(prop);
                             if (expectedValue !== undefined) {
                                 expect(value).property(prop, expectedValue);
@@ -114,14 +114,14 @@ describe("class ArrayParseResult", function() {
             },
             {
                 name: "Constructor with error index 5, start index 3 and current index 8",
-                params: {errorIndex: 5, startIndex: 3, currentIndex: 8},
+                params: { errorIndex: 5, startIndex: 3, currentIndex: 8 },
                 test: (value) => {
                     expect(value).instanceof(ArrayParseResult);
-                    [ ["startIndex"], 3, ["currentIndex", 8], 
+                    [["startIndex"], 3, ["currentIndex", 8],
                     ["errorIndex", 5],
-                ["createNewResult", false], ["isEnd", false], 
-            ["isError", true] ].forEach(
-                        ([prop, expectedValue=undefined]) => {
+                    ["createNewResult", false], ["isEnd", false],
+                    ["isError", true]].forEach(
+                        ([prop, expectedValue = undefined]) => {
                             expect(value).have(prop);
                             if (expectedValue !== undefined) {
                                 expect(value).property(prop, expectedValue);
@@ -132,33 +132,52 @@ describe("class ArrayParseResult", function() {
             }
 
 
-        ].forEach( testCase => {
-            it(testCase.name, function() {
+        ].forEach(testCase => {
+            it(testCase.name, function () {
                 let result = undefined;
-                expect( () => {
+                expect(() => {
                     result = new ArrayParseResult(testCase.params)
                 }).not.throw();
-                
+
             });
         });
     })
 
     describe("setCurrent", function () {
-        defaultConstructionParams.map( ([name, params]) => ({
-            name,
+
+        /**
+         * Get the current index.
+         * @param {import("../../src/stateparser.mjs").ArrayParseResultParams} [params] 
+         * @returns {number} The current index of the parameters.
+         */
+        function getCurrentIndex(params) {
+            if (params) {
+                if (params.currentIndex) {
+                    return params.currentIndex;
+                } else if (params.startIndex) {
+                    return params.startIndex;
+                }
+            }
+            return 0;
+        }
+
+        defaultConstructionParams.map(([name, params]) => ({
+            name: `${name} setting current index to ${getCurrentIndex(params) +1}`,
             target: new ArrayParseResult(params),
-            params: 5,
+            params: getCurrentIndex(params) + 1,
             test(value) {
-                expect(value.currentIndex).equal(5);
+                expect(value.currentIndex).equal(getCurrentIndex(params) + 1);
             }
-        })).forEach( (testCase) => {
-            let result;
-            if (testCase.exception){
-                expect( () => {result = testCase.target.setCurrent(testCase.params)}).to.throw(testCase.exception);
-            } else {
-                expect( () => {result = testCase.target.setCurrent(testCase.params)}).to.not.throw();
-                testCase.test(result);
-            }
+        })).forEach((testCase) => {
+            it(`${testCase.name}`, function () {
+                let result;
+                if (testCase.exception) {
+                    expect(() => { result = testCase.target.setCurrent(testCase.params) }).to.throw(testCase.exception);
+                } else {
+                    expect(() => { result = testCase.target.setCurrent(testCase.params) }).to.not.throw();
+                    testCase.test(result);
+                }
+            })
         });
     });
 
