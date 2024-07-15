@@ -468,32 +468,247 @@ export class CodePointParseState {
     }
 }
 
+/**
+ * @template SOURCE The type of the parsed value.
+ * @template RESULT The type of the parse result.
+ * @template [CAUSE=any] The type of the cause.
+ * @typedef ParseErrorOptions
+ * @property {SOURCE} [parsed] The parsed value. An undefined value indicates the end of parse.
+ * @property {ParseResult<SOURCE, RESULT>} [parseResult] The parse result causing
+ * the error. 
+ * @property {number} [errorIndex] The parse iteration index of the error.
+ * @property {CAUSE} [cause] The cause of the error.
+ */
+
+/**
+ * An error representing a parse error.
+ * @template SOURCE The type of the parsed value.
+ * @template RESULT The type of the parse result.
+ */
+export class ParseError extends Error {
+
+    /**
+     * Create a new parse error.
+     * @param {string} [message="Parse failed"] The error message.
+     * @param {ParseErrorOptions<SOURCE, RESULT>} [options] The options of the parse result.
+     */
+    constructor(message = "Parse failed", options = {}) {
+        const { parsed = undefined, parseResult = undefined, errorIndex = undefined } = options;
+        super(message);
+        this.name = this.constructor.name;
+        this.parsed = parsed;
+        this.parseResult = parseResult;
+        this.errorIndex = index;
+    }
+}
+
+/**
+ * The fucntion creating a parse result.
+ * @template RESULT the result of the parse.
+ * @callback ParseResultCreator
+ * @returns {ParseResult<RESULT>}
+ */
+
+/**
+ * The options of the parse state construction.
+ * @template ELEMENT element The parsed valeus.
+ * @template RESULT teh result of the parse.
+ * @typedef {Object} ParseStateOptions
+ */
 
 /**
  * The class performing a state parser.
  * @template ELEMENT element The parsed valeus.
  * @template RESULT teh result of the parse.
+ * @property {ParseResultCreator<ELEMENT, RESULT>} [resultCreator] The function creating a parse result.
  */
 export default class StateParser {
 
     /**
-     * 
-     * @param {ParseState<ELEMENT, RESULT>} initialState The initial state of the parse.
+     * Create a default result creator.
+     * @param {ELEMENT} [initialResult] The initial result. 
+     * @returns { () => ParseResult<RESULT>} The creator of the parse result.
      */
-    constructor(initialState) {
-
+    static getResultCreator(initialResult = undefined) {
+        return () => ({
+            result: initialResult,
+            isEnd: false,
+            isComplete: this.initialState.isComplete ?? false,
+            isError: this.initialState.isError ?? false,
+            setResult(result) {
+                this.result = result;
+            }
+        });
     }
 
     /**
+     * Create new state parser. 
+     * @param {ParseState<ELEMENT, RESULT>} initialState The initial state of the parse.
+     * @param {ParseStateOptions<ELEMENT, RESULT>} [options] The parse state construction options.
+     */
+    constructor(initialState, options = {}) {
+        this.initialState = initialState;
+        this.#resultCreator = this.checkResultCreator(options.resultCreator);
+    }
+
+    /**
+     * Check the reuslt creator. 
+     * @param {*} resultCreator The result candidate.
+     * @returns {ParseResultCreator<RESULT>} A valid result creator fuction.
+     * @throws {TypeError} The type of the result creator was not a function.
+     * @throws {RangeError} The result creator required too many parameters.
+     */
+    checkResultCreator(resultCreator) {
+        if (resultCreator === undefined) {
+            // Setting to the default creator. 
+            return this.defaultResultCreator;
+        } else if (typeof resultCreator !== "function") {
+            throw new TypeError("The result creator has to be a function");
+        } else if (resultCreator.length !== 0) {
+            throw new RangeError("The result creator has to be a function without required parameters");
+        } else {
+            return resultCreator;
+        }
+    }
+
+    /**
+     * The parse result creartor function.
+     * @type {() => ParseResult<RESULT>}
+     */
+    get defaultResultCreator() {
+        return StateParser.getResultCreator();
+    }
+
+    #resultCreator;
+
+    /**
+     * Create a new parse result.
+     * @returns {ParseResult<ELEMENT, RESULT>}
+     */
+    createParseResult() {
+        return this.#resultCreator();
+    }
+
+    /**
+     * Parse a source element.
+     * @param {ParseState<ELEMENT, RESULT>} state The current state.
+     * @param {ELEMENT} source The parsed value.
+     * @param {ParseState<ELEMENT, RESULT>} currentResult The current parse state.
+     * @returns {StateTransition<ELEMENT, RESULT>} The resulting transition.
+     */
+    parse(state, source, currentResult) {
+        return state.parse(source, currentResult);
+    }
+
+
+    /**
      * Parse the given source.
-    * @param {Iterator<ELEMENT>} source
+    * @param {Iterator<ELEMENT>} source The parsed source.
+    * @returns {RESULT} The parse succeeds. 
+    * @throws {ParseError<ELEMENT, RESULT>} The parse failed.
      */
     parseAll(source) {
         try {
-            let next = source.next();
+            // Iterating source.
+            let index = 0;
+            const iterator =source[Symbol.iterator]();
+            let next = iterator.next();
+            let state = this.initialState;
+            let result = this.createParseResult();
+            if ("setStart" in result) {
+                result = result.setStart(index);
+            }
+            while (next && !next.done) {
+                const [nextState, newResult] = this.parse(state, next.value, result);
+                if (nextState == null || nextState.isError) {
+                    if (state.isComplete && this.completeState) {
+                        // The state is complete and we do have state for complete parse
+                        // - Moving to that state and continue parse with the current iteration value.
+                        state = this.completeState;
+                        if ("setEnd" in result) {
+                            result = result.setEnd(index);
+                        }
+                    } else {
+                        throw ParseError("Parse failed", {
+                            parsed: next.value,
+                            parseResult: ("setError" in result ? result.setError(index) : result),
+                            errorIndex: index
+                        });
+                    }
+                } else {
+                    // Moving to the next iteration. 
+                    next = iterator.next();
+                    result = ("setCurrent" in newResult ? newResult.setCurrent(index) : newResult);
+                    index++;
+                }
+            }
+
+            // At the end of parse.
+            if (next?.done && state.isComplete) {
+                // The parse succeeded.
+                return result.result;
+            } else {
+                throw new ParseError("Unexpected end of parse", {errorIndex: index});
+            }
         } catch (error) {
-            new StateParser.ErrorState(error);
+            if (error instanceof ParseError) {
+                throw error;
+            } else {
+                throw new ParseError("Parse failed", { cause: error });
+            }
         }
     }
+
+}
+
+/**
+ * The options specific to the iterable parse state.
+ * @template ELEMENT The element type of the parse.
+ * @template [RESULT=Iterable<ELEMENT>] The result type.
+ * @typedef {Object} IterableParseStateSpecificOptions
+ * @property {number} [startIndex=0] The start index of the parse.
+ * @property {number} [currentIndex=startIndex] The current index of the parse.
+ * @property {ParseREsultCreator} [resultCreator]
+ */
+
+/**
+ * @template ELEMENT The element type of the parse.
+ * @template [RESULT=Iterable<ELEMENT>] The result type.
+ * @typedef {ParseStateOption<ELEMENT, RESULT> & IterableParseStateSpecificOptions<ELEMENT, RESULT>} IterableParseStateOptions
+ */
+
+/**
+ * @template ELEMENT The element type of the parse.
+ * @template [RESULT=Iterable<ELEMENT>] The result type.
+ * The iterable state parser.
+ * 
+ * @extends {StateParser<ELEMENT, RESULT>}
+ */
+export class IterableStateParser extends StateParser {
+    /**
+     * Create new state parser. 
+     * @param {IterableParseState<ELEMENT, RESULT>} initialState The initial state of the parse.
+     * @param {IterableParseStateOptions<ELEMENT, RESULT>} [options] The construciton options of the 
+     * iterable state parser.
+     */
+    constructor(initialState, options = {}) {
+        super(initialState, options);
+    }
+
+
+    /**
+     * @inheritdoc
+     */
+    checkResultCreator(creator) {
+        const result = super.checkResultCreator(cerator);
+        const testResult = result();
+        if (["currentIndex", "startIndex"].every((prop) => (prop in testResult && Number.isSafeInteger(testResult[prop]))) &&
+            ["setCurrent", "setStart", "setEnd", "setError"].every((prop) => (prop in testResult && testResult[prop] instanceof Function && testResult[prop].length === 1))) {
+            return result;
+        } else {
+            throw new RangeError("The test result creator does not provide iterable test result");
+        }
+    }
+
 
 }
