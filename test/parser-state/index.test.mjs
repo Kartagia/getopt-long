@@ -162,7 +162,7 @@ describe("class ArrayParseResult", function () {
         }
 
         defaultConstructionParams.map(([name, params]) => ({
-            name: `${name} setting current index to ${getCurrentIndex(params) +1}`,
+            name: `${name} setting current index to ${getCurrentIndex(params) + 1}`,
             target: new ArrayParseResult(params),
             params: getCurrentIndex(params) + 1,
             test(value) {
@@ -181,5 +181,119 @@ describe("class ArrayParseResult", function () {
         });
     });
 
+    describe("setError", function () {
+
+        /**
+         * Get the current index.
+         * @param {import("../../src/stateparser.mjs").ArrayParseResultParams} [params] 
+         * @returns {number} The current index of the parameters.
+         */
+        function getNewErrorIndex(params) {
+            return (params?.errorIndex ? params.errorIndex + 1 : 0);
+        }
+
+
+        defaultConstructionParams.map(([name, params]) => ({
+            name: `${name} setting error index to ${getNewErrorIndex(params)}`,
+            target: new ArrayParseResult(params),
+            params: getNewErrorIndex(params),
+            test(value) {
+                const expectedIndex = getNewErrorIndex(params);
+                if (expectedIndex === undefined) {
+                    expect(value.errorIndex).undefined;
+                } else {
+                    expect(value.errorIndex).equal(getNewErrorIndex(params));
+                }
+            }
+        })).forEach((testCase) => {
+            it(`${testCase.name}`, function () {
+                let result;
+                if (testCase.exception) {
+                    expect(() => { result = testCase.target.setError(testCase.params) }).to.throw(testCase.exception);
+                } else {
+                    expect(() => { result = testCase.target.setError(testCase.params) }).to.not.throw();
+                    testCase.test(result);
+                }
+            })
+        });
+    });
+
+    describe("setEnd", function () {
+
+        /**
+         * Get the current index.
+         * @param {import("../../src/stateparser.mjs").ArrayParseResultParams} [params] 
+         * @returns {number} The current index of the parameters.
+         */
+        function getNewEndIndex(params) {
+            return (params?.endIndex ? params.endIndex + 1 : 0);
+        }
+
+
+        defaultConstructionParams.map(([name, params]) => ({
+            name: `${name} setting end index to ${getNewEndIndex(params)}`,
+            target: new ArrayParseResult(params),
+            params: getNewEndIndex(params),
+            test(value) {
+                const expectedIndex = getNewEndIndex(params);
+                if (expectedIndex === undefined) {
+                    expect(value.endIndex).undefined;
+                } else {
+                    expect(value.endIndex).equal(getNewEndIndex(params));
+                }
+            }
+        })).forEach((testCase) => {
+            it(`${testCase.name}`, function () {
+                let result;
+                if (testCase.exception) {
+                    expect(() => { result = testCase.target.setEnd(testCase.params) }).to.throw(testCase.exception);
+                } else {
+                    expect(() => { result = testCase.target.setEnd(testCase.params) }).to.not.throw();
+                    testCase.test(result);
+                }
+            })
+        });
+    });
+
+    describe("setStart", function () {
+
+        /**
+         * Get the current index.
+         * @param {import("../../src/stateparser.mjs").ArrayParseResultParams} [params] 
+         * @returns {number} The current index of the parameters.
+         */
+        function getNewStartIndex(params) {
+            return ((params?.startIndex) ?? 0) + 1;
+        }
+
+
+        defaultConstructionParams.map(([name, params]) => ({
+            name: `${name} setting start index to ${getNewStartIndex(params)}`,
+            target: new ArrayParseResult(params),
+            params: getNewStartIndex(params),
+            test(value) {
+                const expectedIndex = getNewStartIndex(params);
+                if (expectedIndex === undefined) {
+                    expect(value.startIndex).undefined;
+                } else {
+                    expect(value.startIndex).equal(getNewStartIndex(params));
+                }
+            }
+        })).forEach((testCase) => {
+            it(`${testCase.name}`, function () {
+                let result;
+                if (testCase.exception) {
+                    expect(() => { result = testCase.target.setStart(testCase.params) }).to.throw(testCase.exception);
+                } else {
+                    expect(() => { result = testCase.target.setStart(testCase.params) }).to.not.throw();
+                    testCase.test(result);
+                }
+            })
+        });
+    });
+
 });
+
+
+
 
