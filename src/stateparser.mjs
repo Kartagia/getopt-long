@@ -206,8 +206,8 @@ export class IterableIndexingParseResult {
      * @param {IterableParseResultIndexing<ELEMENT, RESULT>} [params] The initial state.
      */
     constructor(params = {}) {
-        const { startIndex = 0, endIndex = undefined, errorIndex = undefined } = param;
-        const { currentIndex = startIndex } = param;
+        const { startIndex = 0, endIndex = undefined, errorIndex = undefined } = params;
+        const { currentIndex = startIndex } = params;
 
         /**
          * The start index of the parse result.
