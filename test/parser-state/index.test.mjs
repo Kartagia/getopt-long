@@ -292,6 +292,149 @@ describe("class ArrayParseResult", function () {
         });
     });
 
+
+    /**
+     * The tested new results.
+     * @type {(undefined|number[])}
+     */
+    const testedResults = [undefined, [3, 5], [3, 5, 8]];
+
+    describe("Test setResult", function () {
+
+        defaultConstructionParams.forEach(([name, constructorParams]) => {
+
+            /**
+             * @type {ArrayParseResult<number>}
+             */
+            const originalParseResult = /** @type {ArrayParseResult<number, number[]>} */ new ArrayParseResult(constructorParams);
+
+            // Taking old result for testing old result is respected.
+            let tested = originalParseResult.setResult(originalParseResult.result);
+
+            /**
+             * Test whether the tested follows the create new result.
+             * @param {ArrayParseResult<number>} tested The tested result.
+             * @param {ArrayParseResult<number>} oldParseResult The previous result from which the old result is generated.
+             */
+            function testCreateNewResult(tested, oldParseResult) {
+                expect(oldParseResult).a("object");
+                if (oldParseResult.createNewResult) {
+                    expect(tested, "The create new result not respeected").not.equal(oldParseResult);
+                } else {
+                    expect(tested, "The create new result not respected - result is not equal to result.").equal(oldParseResult);
+                }
+            }
+
+            describe(`ArrayStateParser ${name}`, function () {
+                it("Constructed object ${name}: Does the setResult respect create new result", function () {
+                    testCreateNewResult(tested, originalParseResult);
+                });
+
+
+                // Creating the test cases.
+                testedResults.map(newResult => {
+                    /**
+                     * The expected result of the 
+                     */
+                    const expectedNewResult = newResult ? [...newResult] : [];
+                    return {
+                        name: `Set result to ${newResult} for ${name}`,
+                        tested,
+                        params: newResult,
+                        /**
+                         * Test the result of hte setResult.
+                         * @param {ArrayTestCase<number>} value 
+                         */
+                        test(value) {
+                            testCreateNewResult(value, tested);
+                            if (expectedResult === undefined) {
+                                expect(value.result, `The result was not set to undefined`).undefined;
+                            } else {
+                                expect(value.result, `The result was not the expected array [${expectedNewResult.map(entry => String(entry)).join(",")}]`).eql(expectednewResult)
+                            }
+                        }
+                    }
+                }).forEach(testCase => {
+                    it(testCase.name, function () {
+                        /**
+                         * @type {ArrayParseResult<number, number[]>}
+                         */
+                        if (testCase.expectedException) {
+                            let result;
+                            expect(() => { result = testCase.tested.setResult(testCase.params) }, "Test did not throw expected exception").to.throw(testCase.expectedException);
+                        } else {
+                            expect(() => {
+                                const testedValue = testCase.tested.setResult(testCase.params);
+                                console.log(`Parse result returned ${testedValue}`);
+                                testCase.test(testedValue);
+                            }, "Test did throw unexpected exception.").not.throw;
+                        }
+                    });
+
+
+
+                })
+            })
+        })
+    });
+
+    describe.skip("Test addResult", function () {
+        defaultConstructionParams.flatMap(([name, constructorParams]) => {
+
+            const tested = new ArrayParseResult(constructorParams);
+            return testedResults.map(newResult => {
+                if (tested.createNewResult) {
+                    let expectedResult = newResult;
+                    return {
+                        name: `Set result to ${newResult} for ${name}`,
+                        tested,
+                        params: newResult,
+                        expectedResult,
+                        test(value) {
+                            expect(value).not.equal(tested);
+                            if (newParams === undefined) {
+                                expect(value).undefined;
+                            } else {
+                                expect(value).eql(newResult)
+                            }
+                        }
+                    };
+
+                } else {
+                    let expectedResult = newResult;
+                    return {
+                        name: `Set result to ${newResult} for ${name}`,
+                        tested,
+                        params: newResult,
+                        expectedResult,
+                        test(value) {
+                            expect(value).equal(tested);
+                            if (newParams === undefined) {
+                                expect(value).property("result", undefined);
+                            } else {
+                                expect(value.result).eql(newResult)
+                            }
+                        }
+                    };
+                };
+
+            })
+        }).forEach(testCase => {
+            it(testCase.name, function () {
+                let result;
+                if (testCase.expectedException) {
+                    expect(() => { result = testCase.tested.setResult(testCase.params) }).to.throw(testCase.expectedException);
+                } else {
+                    expect(() => { result = testCase.tested.setResult(testCase.params) }).not.throw;
+                    testCase.test(result);
+                }
+            });
+
+        })
+
+    });
+
+
 });
 
 
