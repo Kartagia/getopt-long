@@ -12,6 +12,9 @@ describe("function createDefaultStateParser", function () {
 });
 
 
+/**
+ * Testing class ArrayParseResult
+ */
 describe("class ArrayParseResult", function () {
 
     const defaultConstructionParams = [
@@ -20,8 +23,8 @@ describe("class ArrayParseResult", function () {
         ["With start index 5", { startIndex: 5 }],
         ["With error index 5", { endIndex: 5 }],
         ["With end index 5", { errorIndex: 5 }],
-        ["With start index 3, error index 5, and current idnex 8", { startIndex: 3, errorIndex: 5, currentIndex: 8 }]
-    ];
+        ["With start index 3, error index 5, and current index 8", { startIndex: 3, errorIndex: 5, currentIndex: 8 }]
+    ].flatMap(([name, params]) => ([[name, params ? { ...params } : undefined], [`${name} with create new result`, { ...params, createNewResult: true }]]));
 
     describe("Constructor", function () {
         [
@@ -319,14 +322,14 @@ describe("class ArrayParseResult", function () {
             function testCreateNewResult(tested, oldParseResult) {
                 expect(oldParseResult).a("object");
                 if (oldParseResult.createNewResult) {
-                    expect(tested, "The create new result not respeected").not.equal(oldParseResult);
+                    expect(tested, "The create new result not respected").not.equal(oldParseResult);
                 } else {
-                    expect(tested, "The create new result not respected - result is not equal to result.").equal(oldParseResult);
+                    expect(tested, "The create new result not respected - result is not equal to original result.").equal(oldParseResult);
                 }
             }
 
             describe(`ArrayStateParser ${name}`, function () {
-                it("Constructed object ${name}: Does the setResult respect create new result", function () {
+                it("Does the setResult respect create new result", function () {
                     testCreateNewResult(tested, originalParseResult);
                 });
 
@@ -350,7 +353,7 @@ describe("class ArrayParseResult", function () {
                             if (expectedResult === undefined) {
                                 expect(value.result, `The result was not set to undefined`).undefined;
                             } else {
-                                expect(value.result, `The result was not the expected array [${expectedNewResult.map(entry => String(entry)).join(",")}]`).eql(expectednewResult)
+                                expect(value.result, `The result was not the expected array [${expectedNewResult.map(entry => String(entry)).join(",")}]`).eql(expectedNewResult)
                             }
                         }
                     }
@@ -378,62 +381,254 @@ describe("class ArrayParseResult", function () {
         })
     });
 
-    describe.skip("Test addResult", function () {
-        defaultConstructionParams.flatMap(([name, constructorParams]) => {
+    describe("Test addResult", function () {
+        defaultConstructionParams.forEach(([name, constructorParams]) => {
 
-            const tested = new ArrayParseResult(constructorParams);
-            return testedResults.map(newResult => {
-                if (tested.createNewResult) {
-                    let expectedResult = newResult;
-                    return {
-                        name: `Set result to ${newResult} for ${name}`,
-                        tested,
-                        params: newResult,
-                        expectedResult,
-                        test(value) {
-                            expect(value).not.equal(tested);
-                            if (newParams === undefined) {
-                                expect(value).undefined;
-                            } else {
-                                expect(value).eql(newResult)
-                            }
-                        }
-                    };
+            /**
+             * @type {ArrayParseResult<number>}
+             */
+            const originalParseResult = /** @type {ArrayParseResult<number, number[]>} */ new ArrayParseResult(constructorParams);
 
+            /**
+             * Create new expected result.
+             * @param {ArrayParseResult<number>} oldParseResult The old parse result.
+             * @param {number[]|undefined} oldExpectedResult Teh old expected result.
+             * @param {number[]|undefined} addition The added elements.
+             * @returns {number[]} Teh new expected result.
+             */
+            function getNewExpectedResult(oldExpectedResult, addition) {
+                return [...(oldExpectedResult ?? []), ...(addition ?? [])];
+            }
+
+            /**
+             * The expected result.
+             * @type {number[]}
+             */
+            let expectedResult = getNewExpectedResult(null, originalParseResult.result);
+
+
+
+            // Taking old result for testing old result is respected.
+            expectedResult = getNewExpectedResult(expectedResult, originalParseResult.result);
+            let tested = originalParseResult.setResult(originalParseResult.result);
+
+
+            /**
+             * Test whether the tested follows the create new result.
+             * @param {ArrayParseResult<number>} tested The tested result.
+             * @param {ArrayParseResult<number>} oldParseResult The previous result from which the old result is generated.
+             */
+            function testCreateNewResult(tested, oldParseResult) {
+                expect(oldParseResult).a("object");
+                if (oldParseResult.createNewResult) {
+                    expect(tested, "The create new result not respeected").not.equal(oldParseResult);
                 } else {
-                    let expectedResult = newResult;
-                    return {
-                        name: `Set result to ${newResult} for ${name}`,
-                        tested,
-                        params: newResult,
-                        expectedResult,
-                        test(value) {
-                            expect(value).equal(tested);
-                            if (newParams === undefined) {
-                                expect(value).property("result", undefined);
-                            } else {
-                                expect(value.result).eql(newResult)
-                            }
-                        }
-                    };
-                };
-
-            })
-        }).forEach(testCase => {
-            it(testCase.name, function () {
-                let result;
-                if (testCase.expectedException) {
-                    expect(() => { result = testCase.tested.setResult(testCase.params) }).to.throw(testCase.expectedException);
-                } else {
-                    expect(() => { result = testCase.tested.setResult(testCase.params) }).not.throw;
-                    testCase.test(result);
+                    expect(tested, "The create new result not respected - result is not equal to result.").equal(oldParseResult);
                 }
-            });
+            }
 
+            describe(`ArrayStateParser ${name}`, function () {
+                it(`Does the addResult respect create new result`, function () {
+                    testCreateNewResult(tested, originalParseResult);
+                });
+
+
+                // Creating the test cases.
+                testedResults.map(newResult => {
+                    /**
+                     * The expected result of the 
+                     */
+                    const expectedNewResult = getNewExpectedResult(expectedResult, newResult);
+                    return {
+                        name: `Add ${newResult} to result of ${name}`,
+                        tested,
+                        params: newResult,
+                        /**
+                         * Test the result of hte setResult.
+                         * @param {ArrayTestCase<number>} value 
+                         */
+                        test(value) {
+                            testCreateNewResult(value, tested);
+                            if (expectedNewResult === undefined) {
+                                expect(value.result, `The result was not unmodified`).eql(expectedNewResult);
+                            } else {
+                                expect(value.result, `The [${expectedNewResult.map(entry => String(entry)).join(",")}] was not added to result`).eql(expectedNewResult)
+                            }
+                        }
+                    }
+                }).forEach(testCase => {
+                    it(testCase.name, function () {
+                        /**
+                         * @type {ArrayParseResult<number, number[]>}
+                         */
+                        if (testCase.expectedException) {
+                            let result;
+                            expect(() => { result = testCase.tested.addResult(testCase.params) }, "Test did not throw expected exception").to.throw(testCase.expectedException);
+                        } else {
+                            expect(() => {
+                                const testedValue = testCase.tested.addResult(testCase.params);
+                                console.log(`Parse result returned ${testedValue}`);
+                                testCase.test(testedValue);
+                            }, "Test did throw unexpected exception.").not.throw;
+                        }
+                    });
+
+
+
+                })
+            })
         })
 
     });
 
+
+    describe("Test addElement", function () {
+
+        const etstedResults = [ 5, 8, 12, 13];
+
+        defaultConstructionParams.forEach(([name, constructorParams]) => {
+
+            /**
+             * @type {ArrayParseResult<number>}
+             */
+            const originalParseResult = /** @type {ArrayParseResult<number, number[]>} */ new ArrayParseResult(constructorParams);
+
+            /**
+             * Create new expected result.
+             * @param {ArrayParseResult<number>} oldParseResult The old parse result.
+             * @param {number[]|undefined} oldExpectedResult Teh old expected result.
+             * @param {number} addition The added elements.
+             * @returns {number[]} Teh new expected result.
+             */
+            function getNewExpectedResult(oldExpectedResult, addition) {
+                return [...(oldExpectedResult ?? []), addition];
+            }
+
+            /**
+             * The expected result.
+             * @type {number[]}
+             */
+            let expectedResult = getNewExpectedResult(null, originalParseResult.result);
+
+
+
+            // Taking old result for testing old result is respected.
+            expectedResult = getNewExpectedResult(expectedResult, originalParseResult.result);
+            let tested = originalParseResult.setResult(originalParseResult.result);
+
+
+            /**
+             * Test whether the tested follows the create new result.
+             * @param {ArrayParseResult<number>} tested The tested result.
+             * @param {ArrayParseResult<number>} oldParseResult The previous result from which the old result is generated.
+             */
+            function testCreateNewResult(tested, oldParseResult) {
+                expect(oldParseResult).a("object");
+                if (oldParseResult.createNewResult) {
+                    expect(tested, "The create new result not respeected").not.equal(oldParseResult);
+                } else {
+                    expect(tested, "The create new result not respected - result is not equal to result.").equal(oldParseResult);
+                }
+            }
+
+            describe(`ArrayStateParser ${name}`, function () {
+                it(`Does the addElement respect create new result`, function () {
+                    testCreateNewResult(tested, originalParseResult);
+                });
+
+
+                // Creating the test cases.
+                testedResults.map(newResult => {
+                    /**
+                     * The expected result of the 
+                     */
+                    const expectedNewResult = getNewExpectedResult(expectedResult, newResult);
+                    return {
+                        name: `Add element ${newResult} to ${name}`,
+                        tested,
+                        params: newResult,
+                        /**
+                         * Test the result of hte setResult.
+                         * @param {ArrayTestCase<number>} value 
+                         */
+                        test(value) {
+                            testCreateNewResult(value, tested);
+                            if (expectedNewResult === undefined) {
+                                expect(value.result, `The result was not set to undefined`).undefined;
+                            } else {
+                                expect(value.result, `The result was not the expected array [${expectedNewResult.map(entry => String(entry)).join(",")}]`).eql(expectedNewResult)
+                            }
+                        }
+                    }
+                }).forEach(testCase => {
+                    it(testCase.name, function () {
+                        /**
+                         * @type {ArrayParseResult<number, number[]>}
+                         */
+                        if (testCase.expectedException) {
+                            let result;
+                            expect(() => { result = testCase.tested.addElement(testCase.params) }, "Test did not throw expected exception").to.throw(testCase.expectedException);
+                        } else {
+                            expect(() => {
+                                const testedValue = testCase.tested.addElement(testCase.params);
+                                console.log(`Parse result returned ${testedValue}`);
+                                testCase.test(testedValue);
+                            }, "Test did throw unexpected exception.").not.throw;
+                        }
+                    });
+
+
+
+                })
+            })
+        })
+
+    });
+
+
+    describe("Compound test", function () {
+
+        function testChainSets(tested, originalParseResult) {
+            let expected = [1,3];
+
+            console.log(`Set result to ${expected ? `[${expected.join(", ")}]` : "undefined"}`);
+            expect( () => { tested = tested.setResult(expected)}).not.throw();
+            expect(tested).exist;
+            expect(tested).haveOwnProperty("result");
+            expect(tested.result).eql(expected);
+            console.log(`Original result ${originalParseResult.result ? `[${originalParseResult.result.join(", ")}]` : "undefined"}`)
+            console.log(`Current result ${tested.result ? `[${tested.result.join(", ")}]` : "undefined"}`);
+
+            let added = [5];
+            expected = [...expected, ...added];
+            console.log(`Append result ${added ? `[${added.join(", ")}]` : "undefined"}`);
+            expect( () => { tested = tested.appendResult(added)}).not.throw();
+            expect(tested).haveOwnProperty("result");
+            expect(tested).exist;
+            expect(tested.result).eql(expected);
+            console.log(`Original result ${originalParseResult.result ? `[${originalParseResult.result.join(", ")}]` : "undefined"}`)
+            console.log(`Current result ${tested.result ? `[${tested.result.join(", ")}]` : "undefined"}`);
+
+        }
+
+
+        it("Testing chain of sets with create new result", function () {
+            /**
+             * @type {ArrayParseResult<number>}
+             */
+            let originalParseResult = new ArrayParseResult({createNewResult: true});
+            let tested = originalParseResult;
+            testChainSets(tested, originalParseResult);
+        });
+        it("Testing chain of sets without create new result", function () {
+            /**
+             * @type {ArrayParseResult<number>}
+             */
+            let originalParseResult = new ArrayParseResult({createNewResult: false});
+            let tested = originalParseResult;
+            testChainSets(tested, originalParseResult);
+        });
+    });
 
 });
 
