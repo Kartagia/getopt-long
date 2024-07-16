@@ -334,7 +334,7 @@ export function checkBooleanOrUndefined(value) {
  * It can be created either as on in place parser altering
  * the internal result, or as a creating new independent array.
  * @template [ELEMENT=any] The element type.
- * @implements {IterableParseResult<ELEMENT, ELEMENT[]>}
+ * @implements {IterableParseResult<ELEMENT, ELEMENT[]> & IterableIndexingParseResult<ELEMENT, ELEMENT[]>}
  */
 export class ArrayParseResult extends IterableIndexingParseResult {
 
@@ -352,7 +352,7 @@ export class ArrayParseResult extends IterableIndexingParseResult {
         this.createNewResult = createNewResult;
         /**
          * The current result the parse result.
-         * @type {ELEMENT[]}
+         * @type {ELEMENT[]|undefined}
          */
         this.result = result;
 
@@ -425,12 +425,17 @@ export class ArrayParseResult extends IterableIndexingParseResult {
         }
     }
 
-    setResult(result) {
+    /**
+     * 
+     * @param {ELEMENT[]|undefined} result The new result.
+     * @returns {ArrayParseResult<ELEMENT>}
+     */
+    setResult(result=[]) {
         if (this.createNewResult) {
-            return new ArrayParseResult({ ...this, result: result });
+            return new ArrayParseResult({ ...this, result });
         } else {
             this.result = result;
-            return this;
+            return  /** @type {ArrayParseResult<ELEMENT>} */ this;
         }
     }
 }
