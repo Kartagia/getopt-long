@@ -5,7 +5,6 @@
  */
 
 import { isRange, rangeOptionOptionalProperties } from "./range.mjs";
-import { BasicRange, isRnage } from "./objectRange.mjs";
 import { defaultEquals, defaultLessThan, isRangeOptions } from "./range.mjs";
 
 /**
