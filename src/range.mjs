@@ -183,6 +183,34 @@ export function contains(range, value, options = {}) {
 }
 
 /**
+ * Does a velue belong to the range.
+ * @template [TYPE=number] The range element type.
+ * @param {import("./arrayRange.mjs").ArrayRange<TYPE>|import("./objectRange.mjs").RangeProps<TYPE>} range The tested range.
+ * @param {TYPE} value The tested value.
+ * @param {import("./range.mjs").RangeOptions<TYPE>} [options] The range options
+ * @returns {boolean} True, if and only if the range contains the givenvalue.
+ */
+export function rangeIncludes(range, value, options = undefined) {
+    options = options ?? getRangeOptions(range);
+    if (options === undefined) {
+        // Non-range cannot contain any value.
+        return false;
+    }
+    /** @type {import("./utils.mjs").LessThan<TYPE>} */
+    const lessThan = options.lessThan ?? defaultLessThan;
+
+    /** @type {import("./utils.mjs").ComparisonPredicate<TYPE>} */
+    const equals = options.equals ?? defaultEquals;
+    /** @type {boolean} */
+    let [lowerBoundary = undefined, openLowerBoundary = false] = getRangeLowerBoundary(range);
+    /** @type {boolean} */
+    let [upperBoundary = undefined, openUpperBoundary = false] = getRangeUpperBoundary(range);
+    return (lowerBoundary === undefined || (lessThan(lowerBoundary, value) || (!openLowerBoundary && equals(value, lowerBoundary)))) &&
+        (upperBoundary === undefined || (lessThan(value, upperBoundary) || (!openUpperBoundary && equals(value, upperBoundary))));
+}
+
+
+/**
  * Does the value belong to any ranges.
  * @template TYPE The type of the range values.
  * @param {*} value 
