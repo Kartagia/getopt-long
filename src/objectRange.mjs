@@ -89,37 +89,31 @@ export function isRnage(value) {
 }
 
 
+/**
+ * Does a velue belong to the range.
+ * @template [TYPE=number] The range element type.
+ * @param {RangeProps<TYPE>} range The tested range.
+ * @param {TYPE} value The tested value.
+ * @param {import("./range.mjs").RangeOptions<TYPE>} options 
+ * @returns {boolean} True, if and only if the range contains the givenvalue.
+ */
 export function rangeIncludes(range, value, options = undefined) {
-    /** @type {LessThan<TYPE>|undefined} */
-    let lessThan;
-    /** @type {boolean} */
-    let openLowerBoundary;
-    /** @type {boolean} */
-    let openUpperBoundary;
-    if (options) {
-        lessThan = options.lessThan ?? /** @type {LessThan<TYPE>} */ defaultLessThan;
-    } else if ("lessThan" in range) {
-        lessThan = range.lessThan ?? /** @type {LessThan<TYPE>} */ defaultLessThan;
-    } else {
-        lessThan = /** @type {LessThan<TYPE>} */ defaultLessThan;
+    options = options ?? getRangeOptions(range);
+    if (options === undefined) {
+        // Non-range cannot contain any value.
+        return false;
     }
-    if (options) {
-        openUpperBoundary = (options.openUpperBoundary) ?? false;
-    } else if ("openUpperBoundary" in range) {
-        openUpperBoundary = (range.openUpperBoundary) ?? false;
-    } else {
-        openUpperBoundary = false;
-    }
-    if (options) {
-        openLowerBoundary = options.openLowerBoundary ?? false;
-    } else if ("openLowerBoundary" in range) {
-        openLowerBoundary = range.openLowerBoundary ?? false;
-    } else {
-        openLowerBoundary = false;
-    }
+    /** @type {import("./utils.mjs").LessThan<TYPE>} */
+    const lessThan = options.lessThan ?? defaultLessThan;
 
-    return (range.lowerBoundary === undefined || (openLowerBoundary ? lessThan(range.lowerBoundary, value) : !lessThan(value, range.lowerBoundary))) &&
-        (range.upperBoundary === undefined || (openUpperBoundary ? lessThan(value, range.upperBoundary) : !lessThan(range.upperBoundary, value)));
+    /** @type {import("./utils.mjs").ComparisonPredicate<TYPE>} */
+    const equals = options.equals ?? defaultEquals;
+    /** @type {boolean} */
+    let [lowerBoundary = undefined, openLowerBoundary = false] = getRangeLowerBoundary(range);
+    /** @type {boolean} */
+    let [upperBoundary = undefined, openUpperBoundary = false] = getRangeUpperBoundary(range);
+    return (lowerBoundary === undefined || (lessThan(lowerBoundary, value) || (!openLowerBoundary && equals(value, lowerBoundary)))) &&
+        (upperBoundary === undefined || (lessThan(value, upperBoundary) || (!openUpperBoundary && equals(value, upperBoundary))));
 }
 /**
  * A basic range.
