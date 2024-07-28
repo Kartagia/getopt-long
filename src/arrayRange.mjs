@@ -68,8 +68,8 @@ export function getRangeOptions(range) {
  */
 export function getRangeLowerBoundary(range) {
     return [range[0],
-    andThen(
-        andThen(
+    andThenConvert(
+        andThenConvert(
             range[2], (value) => (typeof value === "object" && value !== null && "openBoundaries" in value), (value) => (value.openBoundaries)
         ),
         (value) => (typeof value === "object" && value !== null && "openLowerBounadry" in value),
@@ -90,8 +90,8 @@ export function getRangeUpperBoundary(range) {
     }
     // Creating fro longer range option. 
     return [range[1] ?? range[0],
-    andThen(
-        andThen(
+    andThenConvert(
+        andThenConvert(
             range[2], (value) => (typeof value === "object" && value !== null && "openBoundaries" in value), (value) => (value.openBoundaries)
         ),
         (value) => (typeof value === "object" && value !== null && "openLowerBounadry" in value),
